@@ -84,6 +84,17 @@ void MultiCam::initCameras() {
 }
 
 
+// toggle hflip on all cameras (matching them all)
+void MultiCam::flipCamerasH() {
+    for(int i=0; i<cams.size(); i++) cams[i].ctrl.hflip = (i==0) ? !cams[0].ctrl.hflip : cams[0].ctrl.hflip;
+}
+
+// toggle vflip on all cameras (matching them all)
+void MultiCam::flipCamerasV() {
+    for(int i=0; i<cams.size(); i++) cams[i].ctrl.vflip = (i==0) ? !cams[0].ctrl.vflip : cams[0].ctrl.vflip;
+}
+
+
 void MultiCam::close() {
     for(auto&& cam : cams) cam.close();
 }
@@ -124,10 +135,10 @@ void MultiCam::update() {
 
 void MultiCam::draw(float x, float y, float w, float h) {
     if(!enabled) return;
-    if(!(doDraw || doScaleDraw)) return;
+    if(!(doDraw || doDrawStretched)) return;
 
-    if(w<1 || !doScaleDraw) w = width;
-    if(h<1 || !doScaleDraw) h = height;
+    if(w<1 || !doDrawStretched) w = width;
+    if(h<1 || !doDrawStretched) h = height;
     if(useFbo) {
         drawFbo(x, y, w, h);
     } else {
@@ -153,7 +164,7 @@ void MultiCam::setupGui(string settingsPath) {
     gui.addToggle("useFbo", useFbo);
     gui.addToggle("readFboToPixels", readFboToPixels);
     gui.addToggle("doDraw", doDraw);
-    gui.addToggle("doScaleDraw", doScaleDraw);
+    gui.addToggle("doDrawStretched", doDrawStretched);
     gui.addSlider("drawAlpha", drawAlpha, 0, 1);
 
     gui.addTitle("autoLayout");

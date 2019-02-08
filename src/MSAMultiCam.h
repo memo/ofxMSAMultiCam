@@ -11,7 +11,7 @@ public:
     bool useFbo = true;
     bool readFboToPixels = false;
     bool doDraw = true;
-    bool doScaleDraw = false;
+    bool doDrawStretched = false;
     float drawAlpha = 1;
 
     // auto layouts
@@ -68,11 +68,14 @@ public:
     vector<Cam> cams;
 
     void setupGui(string settingsPath="settings/multicam.xml");
-    void initCameras();
     void close();
     void autoLayout();
     void update();
     void draw(float x=0, float y=0, float w=0, float h=0);
+
+    void initCameras();
+    void flipCamerasH();
+    void flipCamerasV();
 
     ofTexture& getTexture() { return fbo.getTexture(); }
     ofPixels& getPixels() { return pixels; }
