@@ -78,10 +78,10 @@ public:
     ofPixels& getPixels() { return pixels; }
 
 protected:
-    ofRectangle boundingBox;
+    int width, height;
 
     ofFbo fbo;
-    ofPixels pixels;
+    ofPixels pixels; // only updated if readFboToPixels is true
 
     void updateBoundingBox();
     void drawToFbo();

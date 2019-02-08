@@ -126,15 +126,15 @@ void MultiCam::draw(float x, float y, float w, float h) {
     if(!enabled) return;
     if(!(doDraw || doScaleDraw)) return;
 
-    if(w<1 || !doScaleDraw) w = boundingBox.width;
-    if(h<1 || !doScaleDraw) h = boundingBox.height;
+    if(w<1 || !doScaleDraw) w = width;
+    if(h<1 || !doScaleDraw) h = height;
     if(useFbo) {
         drawFbo(x, y, w, h);
     } else {
         ofPushStyle();
         ofPushMatrix();
         ofTranslate(x, y);
-        ofScale(w/boundingBox.width, h/boundingBox.height);
+        ofScale(w/width, h/height);
         ofEnableAlphaBlending();
         ofSetColor(255, 255*drawAlpha);
         for(auto&& cam : cams) cam.draw();
@@ -162,8 +162,8 @@ void MultiCam::setupGui(string settingsPath) {
     gui.addSlider("autoLayout.height", autoLayoutSettings.height, 0, 4096);
     gui.addToggle("autoLayout.tileH", autoLayoutSettings.tileHorizontal);
     gui.addTitle("Output");
-    gui.addSlider("output.width", boundingBox.width, 0, 8192);
-    gui.addSlider("output.height", boundingBox.height, 0, 8192);
+    gui.addSlider("output.width", width, 0, 8192);
+    gui.addSlider("output.height", height, 0, 8192);
     gui.addContent("fbo", fbo);
 
     int nCams = devices.size();
@@ -204,7 +204,7 @@ void MultiCam::setupGui(string settingsPath) {
 
 
 void MultiCam::updateBoundingBox() {
-    boundingBox = ofRectangle();
+    ofRectangle boundingBox;
     for(auto&& cam : cams) {
         if(cam.ctrl.enabled) {
             ofRectangle bb;
@@ -214,15 +214,17 @@ void MultiCam::updateBoundingBox() {
             boundingBox.growToInclude(bb);
         }
     }
+    width = round(boundingBox.width);
+    height = round(boundingBox.height);
 }
 
 
 
 void MultiCam::drawToFbo() {
     updateBoundingBox();
-    if(!fbo.isAllocated() || (fbo.getWidth() != boundingBox.width) || (fbo.getHeight() != boundingBox.height)) {
-        ofLogVerbose("ofxMSAMultiCam") << "Allocating FBO " << boundingBox;
-        fbo.allocate(boundingBox.width, boundingBox.height, GL_RGB);
+    if(!fbo.isAllocated() || (fbo.getWidth() != width) || (fbo.getHeight() != height)) {
+        ofLogVerbose("ofxMSAMultiCam") << "FBO is " << ofVec2f(fbo.getWidth(), fbo.getHeight()) << ". Allocating " << ofVec2f(width, height);
+        fbo.allocate(width, height, GL_RGB);
     }
     if(!fbo.isAllocated()) return;
 
