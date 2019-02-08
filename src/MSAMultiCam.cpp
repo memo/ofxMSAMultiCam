@@ -5,20 +5,29 @@ namespace msa {
 
 void MultiCam::Cam::setup() {
     close();
+    ofLogVerbose("ofxMSAMultiCam") << "Setup camera " << id << " device " << init.deviceid;
     grabber.setDeviceID(init.deviceid);
     grabber.setDesiredFrameRate(init.fps);
     grabber.setup(init.w, init.h);
+    info.w = grabber.getWidth();
+    info.h = grabber.getHeight();
 }
 
 void MultiCam::Cam::close() {
-    grabber.close();
+    if(grabber.isInitialized()) {
+        ofLogVerbose("ofxMSAMultiCam") << "Closing camera " << id << " device " << init.deviceid;
+        grabber.close();
+    }
 }
 
 void MultiCam::Cam::update() {
-    if(!ctrl.enabled) return;
+    if(!ctrl.enabled) {
+        close();
+        return;
+    }
 
-    if(init.reinit) {
-        init.reinit = false;
+    if(!grabber.isInitialized()) {
+//        init.reinit = false;
         setup();
     }
 
@@ -28,6 +37,12 @@ void MultiCam::Cam::update() {
     }
 
     grabber.update();
+    info.hasNewFrame = grabber.isFrameNew();
+    if(info.hasNewFrame) {
+        float nowTime = ofGetElapsedTimef();
+        if(nowTime > info.lastCaptureTime) info.fps = 1.0f/(nowTime - info.lastCaptureTime);
+        info.lastCaptureTime = nowTime;
+    }
 }
 
 void MultiCam::Cam::draw() const {
@@ -37,7 +52,20 @@ void MultiCam::Cam::draw() const {
 // ofBaseDraws
 void MultiCam::Cam::draw(float x, float y, float w, float h) const {
     if(!ctrl.enabled) return;
-    if(grabber.isInitialized()) grabber.draw(x, y, w, h);
+    if(grabber.isInitialized()) {
+        ofPushMatrix();
+        ofTranslate(x, y);
+        if(ctrl.hflip) {
+            ofTranslate(w, 0);
+            ofScale(-1, 1, 1);
+        }
+        if(ctrl.vflip) {
+            ofTranslate(0, h);
+            ofScale(1, -1, 1);
+        }
+        grabber.draw(0, 0, w, h);
+        ofPopMatrix();
+    }
 }
 
 float MultiCam::Cam::getWidth() const {
@@ -96,7 +124,7 @@ void MultiCam::update() {
 
 void MultiCam::draw(float x, float y, float w, float h) {
     if(!enabled) return;
-    if(!doDraw) return;
+    if(!(doDraw || doScaleDraw)) return;
 
     if(w<1 || !doScaleDraw) w = boundingBox.width;
     if(h<1 || !doScaleDraw) h = boundingBox.height;
@@ -107,8 +135,8 @@ void MultiCam::draw(float x, float y, float w, float h) {
         ofPushMatrix();
         ofTranslate(x, y);
         ofScale(w/boundingBox.width, h/boundingBox.height);
-        ofSetColor(255);
-        ofDisableAlphaBlending();
+        ofEnableAlphaBlending();
+        ofSetColor(255, 255*drawAlpha);
         for(auto&& cam : cams) cam.draw();
         ofPopMatrix();
         ofPopStyle();
@@ -126,36 +154,48 @@ void MultiCam::setupGui(string settingsPath) {
     gui.addToggle("readFboToPixels", readFboToPixels);
     gui.addToggle("doDraw", doDraw);
     gui.addToggle("doScaleDraw", doScaleDraw);
+    gui.addSlider("drawAlpha", drawAlpha, 0, 1);
 
     gui.addTitle("autoLayout");
     gui.addToggle("autoLayout.enabled", autoLayoutSettings.enabled);
-    gui.addSlider("autoLayout.width", autoLayoutSettings.width, 0, 3840);
-    gui.addSlider("autoLayout.height", autoLayoutSettings.height, 0, 1080);
+    gui.addSlider("autoLayout.width", autoLayoutSettings.width, 0, 4096);
+    gui.addSlider("autoLayout.height", autoLayoutSettings.height, 0, 4096);
     gui.addToggle("autoLayout.tileH", autoLayoutSettings.tileHorizontal);
-    gui.addTitle();
+    gui.addTitle("Output");
+    gui.addSlider("output.width", boundingBox.width, 0, 8192);
+    gui.addSlider("output.height", boundingBox.height, 0, 8192);
     gui.addContent("fbo", fbo);
 
     int nCams = devices.size();
     cams.resize(nCams);
-
     for(int i=0; i<cams.size(); i++) {
         auto& cam = cams[i];
+        cam.id = i;
         string si = ofToString(i);
-        gui.addTitle();
-        gui.addTitle(si);
-        gui.addContent(si, cam);
+        //        gui.addTitle(si).setNewColumn();
+        gui.addTitle(si+".init").setNewColumn();;
+        gui.addSlider(si+".init.deviceid", cam.init.deviceid, 0, devices.size()-1).setValue(i);
+        gui.addSlider(si+".init.w", cam.init.w, 0, 1920);
+        gui.addSlider(si+".init.h", cam.init.h, 0, 1080);
+        gui.addSlider(si+".init.fps", cam.init.fps, 0, 240);
+//        gui.addToggle(si+".init.reinit", cam.init.reinit);
+
+        gui.addTitle(si+".ctrl");
         gui.addToggle(si+".ctrl.enabled", cam.ctrl.enabled);
+        gui.addToggle(si+".ctrl.hflip", cam.ctrl.hflip);
+        gui.addToggle(si+".ctrl.vflip", cam.ctrl.vflip);
         gui.addSlider(si+".ctrl.pos.x", cam.ctrl.pos.x, 0, 3840);
         gui.addSlider(si+".ctrl.pos.y", cam.ctrl.pos.y, 0, 1080);
         gui.addSlider(si+".ctrl.scale.x", cam.ctrl.scale.x, 0, 10);
         gui.addSlider(si+".ctrl.scale.y", cam.ctrl.scale.y, 0, 10);
         gui.addToggle(si+".ctrl.showSettings", cam.ctrl.showSettings);
 
-        gui.addSlider(si+".init.deviceid", cam.init.deviceid, 0, devices.size()).setValue(i);
-        gui.addSlider(si+".init.w", cam.init.w, 0, 1920);
-        gui.addSlider(si+".init.h", cam.init.h, 0, 1080);
-        gui.addSlider(si+".init.fps", cam.init.fps, 0, 240);
-        gui.addToggle(si+".init.reinit", cam.init.reinit);
+        gui.addTitle(si+".info");
+        gui.addToggle(si+".info.hasNewFrame", cam.info.hasNewFrame);
+        gui.addSlider(si+".info.w", cam.info.w, 0, 1920);
+        gui.addSlider(si+".info.h", cam.info.h, 0, 1080);
+        gui.addSlider(si+".info.fps", cam.info.fps, 0, 240);
+        gui.addContent(si, cam);
     }
 
 
@@ -199,11 +239,10 @@ void MultiCam::drawToFbo() {
 
 void MultiCam::drawFbo(float x, float y, float w, float h) {
     ofPushStyle();
-    ofPushMatrix();
-    ofSetColor(255);
+    ofEnableAlphaBlending();
+    ofSetColor(255, 255*drawAlpha);
     if(w>0 && h>0) fbo.draw(x, y, w, h);
     else fbo.draw(x, y);
-    ofPopMatrix();
     ofPopStyle();
 }
 

@@ -12,6 +12,7 @@ public:
     bool readFboToPixels = false;
     bool doDraw = true;
     bool doScaleDraw = false;
+    float drawAlpha = 1;
 
     // auto layouts
     struct {
@@ -22,39 +23,40 @@ public:
     } autoLayoutSettings;
 
     //--------------------------------------------------------------
-    ofFbo fbo;
-    ofPixels pixels;
-
     class Cam : public ofBaseDraws {
     public:
         ofVideoGrabber grabber;
+        int id = -1;
 
         struct {
             int deviceid=0; // TODO: make this work by name?
             int w=1280;
             int h=720;
             int fps=30;
-            bool reinit=false;
-            bool dummy;
+//            bool reinit=false;
+//            bool dummy;
         } init;
 
         struct {
-            bool enabled=true;
-            bool showSettings=false;
-            ofVec2f pos;
-            ofVec2f scale=ofVec2f(1, 1);
+            bool enabled = true;
+            bool hflip = false;
+            bool vflip = false;
+            bool showSettings = false;
+            ofVec2f pos = ofVec2f(0, 0);
+            ofVec2f scale = ofVec2f(1, 1);
         } ctrl;
 
         struct {
-            float fps;
-        } stats;
+            bool hasNewFrame = false;
+            int w = 0;
+            int h = 0;
+            float fps = 0;
+            float lastCaptureTime = 0; // for calculating fps
+        } info;
 
         void setup();
-
         void close();
-
         void update();
-
         void draw() const;
 
         // ofBaseDraws
@@ -65,21 +67,25 @@ public:
     };
     vector<Cam> cams;
 
+    void setupGui(string settingsPath="settings/multicam.xml");
     void initCameras();
     void close();
     void autoLayout();
     void update();
     void draw(float x=0, float y=0, float w=0, float h=0);
 
-    void setupGui(string settingsPath="settings/multicam.xml");
+    ofTexture& getTexture() { return fbo.getTexture(); }
+    ofPixels& getPixels() { return pixels; }
 
 protected:
     ofRectangle boundingBox;
 
+    ofFbo fbo;
+    ofPixels pixels;
+
     void updateBoundingBox();
     void drawToFbo();
     void drawFbo(float x=0, float y=0, float w=0, float h=0);
-
 };
 
 } // namespace msa
