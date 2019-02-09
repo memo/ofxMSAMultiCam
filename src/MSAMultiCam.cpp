@@ -5,7 +5,7 @@ namespace msa {
 
 void MultiCam::Cam::setup() {
     close();
-    ofLogVerbose("ofxMSAMultiCam") << "Setup camera " << id << " device " << init.deviceid;
+    ofLogNotice("ofxMSAMultiCam") << "Setup camera " << id << " device " << init.deviceid;
     grabber.setDeviceID(init.deviceid);
     grabber.setDesiredFrameRate(init.fps);
     grabber.setup(init.w, init.h);
@@ -15,7 +15,7 @@ void MultiCam::Cam::setup() {
 
 void MultiCam::Cam::close() {
     if(grabber.isInitialized()) {
-        ofLogVerbose("ofxMSAMultiCam") << "Closing camera " << id << " device " << init.deviceid;
+        ofLogNotice("ofxMSAMultiCam") << "Closing camera " << id << " device " << init.deviceid;
         grabber.close();
     }
 }
@@ -234,7 +234,7 @@ void MultiCam::updateBoundingBox() {
 void MultiCam::drawToFbo() {
     updateBoundingBox();
     if(!fbo.isAllocated() || (fbo.getWidth() != width) || (fbo.getHeight() != height)) {
-        ofLogVerbose("ofxMSAMultiCam") << "FBO is " << ofVec2f(fbo.getWidth(), fbo.getHeight()) << ". Allocating " << ofVec2f(width, height);
+        ofLogWarning("ofxMSAMultiCam") << "FBO is " << ofVec2f(fbo.getWidth(), fbo.getHeight()) << ". Allocating " << ofVec2f(width, height);
         fbo.allocate(width, height, GL_RGB);
     }
     if(!fbo.isAllocated()) return;
