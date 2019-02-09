@@ -80,6 +80,9 @@ public:
     ofTexture& getTexture() { return fbo.getTexture(); }
     ofPixels& getPixels() { return pixels; }
 
+    int getWidth() const { return width; }
+    int getHeight() const { return height; }
+
 protected:
     int width, height;
 
