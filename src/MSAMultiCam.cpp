@@ -4,8 +4,8 @@
 namespace msa {
 
 void MultiCam::Cam::setup() {
+    ofLogNotice("ofxMSAMultiCam") << __func__ << " | id:" << id << ", device:" << init.deviceid;
     close();
-    ofLogNotice("ofxMSAMultiCam") << "Setup camera " << id << " device " << init.deviceid;
     grabber.setDeviceID(init.deviceid);
     grabber.setDesiredFrameRate(init.fps);
     grabber.setup(init.w, init.h);
@@ -15,7 +15,7 @@ void MultiCam::Cam::setup() {
 
 void MultiCam::Cam::close() {
     if(grabber.isInitialized()) {
-        ofLogNotice("ofxMSAMultiCam") << "Closing camera " << id << " device " << init.deviceid;
+        ofLogNotice("ofxMSAMultiCam") << __func__ << " | id:" << id << ", device:" << init.deviceid;
         grabber.close();
     }
 }
@@ -27,7 +27,7 @@ void MultiCam::Cam::update() {
     }
 
     if(!grabber.isInitialized()) {
-//        init.reinit = false;
+        //        init.reinit = false;
         setup();
     }
 
@@ -79,23 +79,27 @@ float MultiCam::Cam::getHeight() const {
 //--------------------------------------------------------------
 //--------------------------------------------------------------
 void MultiCam::initCameras() {
-    close();
+    ofLogNotice("ofxMSAMultiCam") << __func__;
+    closeCameras();
     for(auto&& cam : cams) cam.setup();
 }
 
 
 // toggle hflip on all cameras (matching them all)
 void MultiCam::flipCamerasH() {
+    ofLogNotice("ofxMSAMultiCam") << __func__;
     for(int i=0; i<cams.size(); i++) cams[i].ctrl.hflip = (i==0) ? !cams[0].ctrl.hflip : cams[0].ctrl.hflip;
 }
 
 // toggle vflip on all cameras (matching them all)
 void MultiCam::flipCamerasV() {
+    ofLogNotice("ofxMSAMultiCam") << __func__;
     for(int i=0; i<cams.size(); i++) cams[i].ctrl.vflip = (i==0) ? !cams[0].ctrl.vflip : cams[0].ctrl.vflip;
 }
 
 
-void MultiCam::close() {
+void MultiCam::closeCameras() {
+    ofLogNotice("ofxMSAMultiCam") << __func__;
     for(auto&& cam : cams) cam.close();
 }
 
@@ -189,7 +193,7 @@ void MultiCam::setupGui(string settingsPath) {
         gui.addSlider(si+".init.w", cam.init.w, 0, 1920);
         gui.addSlider(si+".init.h", cam.init.h, 0, 1080);
         gui.addSlider(si+".init.fps", cam.init.fps, 0, 240);
-//        gui.addToggle(si+".init.reinit", cam.init.reinit);
+        //        gui.addToggle(si+".init.reinit", cam.init.reinit);
 
         gui.addTitle(si+".ctrl");
         gui.addToggle(si+".ctrl.enabled", cam.ctrl.enabled);
@@ -234,7 +238,7 @@ void MultiCam::updateBoundingBox() {
 void MultiCam::drawToFbo() {
     updateBoundingBox();
     if(!fbo.isAllocated() || (fbo.getWidth() != width) || (fbo.getHeight() != height)) {
-        ofLogWarning("ofxMSAMultiCam") << "FBO is " << ofVec2f(fbo.getWidth(), fbo.getHeight()) << ". Allocating " << ofVec2f(width, height);
+        ofLogWarning("ofxMSAMultiCam") << __func__ << " | FBO is " << ofVec2f(fbo.getWidth(), fbo.getHeight()) << ". Allocating " << ofVec2f(width, height);
         fbo.allocate(width, height, GL_RGB);
     }
     if(!fbo.isAllocated()) return;

@@ -68,12 +68,12 @@ public:
     vector<Cam> cams;
 
     void setupGui(string settingsPath="settings/multicam.xml");
-    void close();
     void autoLayout();
     void update();
     void draw(float x=0, float y=0, float w=0, float h=0);
 
     void initCameras();
+    void closeCameras();
     void flipCamerasH();
     void flipCamerasV();
 
