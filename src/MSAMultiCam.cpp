@@ -6,6 +6,7 @@ namespace msa {
 void MultiCam::Cam::setup() {
     ofLogNotice("ofxMSAMultiCam") << __func__ << " | id:" << id << ", device:" << init.deviceid;
     close();
+    if(!ctrl.enabled) return;
     grabber.setDeviceID(init.deviceid);
     grabber.setDesiredFrameRate(init.fps);
     grabber.setup(init.w, init.h);
