@@ -9,8 +9,8 @@ class MultiCam
 {
 public:
     bool enabled = true;
-    bool useFbo = true;
-    bool readFboToPixels = false;
+	bool playVideo = false;
+	bool readFboToPixels = false;
     bool doDraw = true;
     bool doDrawStretched = false;
     float drawAlpha = 1;
@@ -43,7 +43,7 @@ public:
             bool hflip = false;
             bool vflip = false;
             bool showSettings = false;
-            ofVec2f pos = ofVec2f(0, 0);
+			int x=0, y=0;
             ofVec2f scale = ofVec2f(1, 1);
         } ctrl;
 
@@ -90,9 +90,10 @@ protected:
     ofFbo fbo;
     ofPixels pixels; // only updated if readFboToPixels is true
 
+	ofVideoPlayer player;
+	string playerFilename = "resources/memo_wonderworks.mov";
+
     void updateBoundingBox();
-    void drawToFbo();
-    void drawFbo(float x=0, float y=0, float w=0, float h=0);
 };
 
 } // namespace msa

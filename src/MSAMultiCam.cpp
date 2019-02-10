@@ -46,7 +46,7 @@ void MultiCam::Cam::update() {
 }
 
 void MultiCam::Cam::draw() const {
-    draw(ctrl.pos.x, ctrl.pos.y, grabber.getWidth()*ctrl.scale.x, grabber.getHeight()*ctrl.scale.y);
+    draw(ctrl.x, ctrl.y, grabber.getWidth()*ctrl.scale.x, grabber.getHeight()*ctrl.scale.y);
 }
 
 // ofBaseDraws
@@ -112,12 +112,13 @@ void MultiCam::autoLayout() {
         for(auto&& cam : cams) if(cam.ctrl.enabled) numActive++;
         if(numActive==0) return;
         if(autoLayoutSettings.tileHorizontal) camSize.x /= numActive;
-        ofVec2f pos = ofVec2f(0);
+		int x = 0, y = 0;
         for(auto&& cam : cams) {
             if(cam.ctrl.enabled) {
                 cam.ctrl.scale = camSize / ofVec2f(cam.getWidth(), cam.getHeight());
-                cam.ctrl.pos = pos;
-                if(autoLayoutSettings.tileHorizontal) pos.x += cam.ctrl.scale.x * cam.getWidth();
+                cam.ctrl.x = x;
+				cam.ctrl.y = y;
+				if(autoLayoutSettings.tileHorizontal) x += cam.ctrl.scale.x * cam.getWidth();
 
             }
         }
@@ -127,13 +128,47 @@ void MultiCam::autoLayout() {
 
 void MultiCam::update() {
     if(!enabled) return;
+
+	// update cameras
     for(auto&& cam : cams) cam.update();
-    autoLayout();
-    updateBoundingBox();
-    if(useFbo) {
-        drawToFbo();
-        if(readFboToPixels) fbo.readToPixels(pixels);
-    }
+ 	
+	// update video
+	if (playVideo) {
+		if (!player.isLoaded()) {
+			ofLogWarning("ofxMSAMultiCam") << __func__ << " | video player is not loaded. Loading " << playerFilename;
+			player.load(playerFilename);
+		}
+		player.update();
+	}
+
+	// auto layout and update bounding box
+	autoLayout();
+	updateBoundingBox();
+
+	// allocate fbo
+	if (!fbo.isAllocated() || (fbo.getWidth() != width) || (fbo.getHeight() != height)) {
+		ofLogWarning("ofxMSAMultiCam") << __func__ << " | FBO is " << ofVec2f(fbo.getWidth(), fbo.getHeight()) << ". Allocating " << ofVec2f(width, height);
+		fbo.allocate(width, height, GL_RGB);
+	}
+	if (!fbo.isAllocated()) {
+		ofLogError("ofxMSAMultiCam") << __func__ << " Could not allocate fbo " << ofVec2f(width, height);
+		return;
+	}
+
+	// draw fbo
+	ofPushStyle();
+	fbo.begin();
+	ofClear(0);
+	ofSetColor(255);
+	ofDisableAlphaBlending();
+	ofDisableDepthTest();
+	for (auto&& cam : cams) cam.draw();
+	if (playVideo) player.draw(0, 0, width, height);
+	fbo.end();
+	ofPopStyle();
+
+	// read back 
+    if(readFboToPixels) fbo.readToPixels(pixels);
 }
 
 
@@ -143,20 +178,27 @@ void MultiCam::draw(float x, float y, float w, float h) {
 
     if(w<1 || !doDrawStretched) w = width;
     if(h<1 || !doDrawStretched) h = height;
-    if(useFbo) {
-        drawFbo(x, y, w, h);
-    } else {
-        ofPushStyle();
-        ofPushMatrix();
-        ofTranslate(x, y);
-        ofScale(w/width, h/height);
-        ofEnableAlphaBlending();
-        ofSetColor(255, 255*drawAlpha);
-        for(auto&& cam : cams) cam.draw();
-        ofPopMatrix();
-        ofPopStyle();
-    }
+
+	ofPushStyle();
+	ofEnableAlphaBlending();
+	ofSetColor(255, 255 * drawAlpha);
+	if (w > 0 && h > 0) fbo.draw(x, y, w, h);
+	else fbo.draw(x, y);
+	ofPopStyle();
+
+	//} else {
+        //ofPushStyle();
+        //ofPushMatrix();
+        //ofTranslate(x, y);
+        //ofScale(w/width, h/height);
+        //ofEnableAlphaBlending();
+        //ofSetColor(255, 255*drawAlpha);
+        //for(auto&& cam : cams) cam.draw();
+        //ofPopMatrix();
+        //ofPopStyle();
+    //}
 }
+
 
 
 void MultiCam::setup(ofxSimpleGuiToo& gui, string settingsPath) {
@@ -165,8 +207,8 @@ void MultiCam::setup(ofxSimpleGuiToo& gui, string settingsPath) {
 
     gui.addPage("MULTICAM").setXMLName(settingsPath);
     gui.addToggle("enabled", enabled);
-    gui.addToggle("useFbo", useFbo);
-    gui.addToggle("readFboToPixels", readFboToPixels);
+	gui.addToggle("playVideo", playVideo);
+	gui.addToggle("readFboToPixels", readFboToPixels);
     gui.addToggle("doDraw", doDraw);
     gui.addToggle("doDrawStretched", doDrawStretched);
     gui.addSlider("drawAlpha", drawAlpha, 0, 1);
@@ -199,8 +241,8 @@ void MultiCam::setup(ofxSimpleGuiToo& gui, string settingsPath) {
         gui.addToggle(si+".ctrl.enabled", cam.ctrl.enabled);
         gui.addToggle(si+".ctrl.hflip", cam.ctrl.hflip);
         gui.addToggle(si+".ctrl.vflip", cam.ctrl.vflip);
-        gui.addSlider(si+".ctrl.pos.x", cam.ctrl.pos.x, 0, 3840);
-        gui.addSlider(si+".ctrl.pos.y", cam.ctrl.pos.y, 0, 1080);
+        gui.addSlider(si+".ctrl.pos.x", cam.ctrl.x, 0, 3840);
+        gui.addSlider(si+".ctrl.pos.y", cam.ctrl.y, 0, 1080);
         gui.addSlider(si+".ctrl.scale.x", cam.ctrl.scale.x, 0, 10);
         gui.addSlider(si+".ctrl.scale.y", cam.ctrl.scale.y, 0, 10);
         gui.addToggle(si+".ctrl.showSettings", cam.ctrl.showSettings);
@@ -224,7 +266,7 @@ void MultiCam::updateBoundingBox() {
     for(auto&& cam : cams) {
         if(cam.ctrl.enabled) {
             ofRectangle bb;
-            bb.setPosition(cam.ctrl.pos.x, cam.ctrl.pos.y);
+            bb.setPosition(cam.ctrl.x, cam.ctrl.y);
             bb.width = cam.grabber.getWidth() * cam.ctrl.scale.x;
             bb.height = cam.grabber.getHeight() * cam.ctrl.scale.y;
             boundingBox.growToInclude(bb);
@@ -233,37 +275,6 @@ void MultiCam::updateBoundingBox() {
     width = round(boundingBox.width);
     height = round(boundingBox.height);
 }
-
-
-
-void MultiCam::drawToFbo() {
-    updateBoundingBox();
-    if(!fbo.isAllocated() || (fbo.getWidth() != width) || (fbo.getHeight() != height)) {
-        ofLogWarning("ofxMSAMultiCam") << __func__ << " | FBO is " << ofVec2f(fbo.getWidth(), fbo.getHeight()) << ". Allocating " << ofVec2f(width, height);
-        fbo.allocate(width, height, GL_RGB);
-    }
-    if(!fbo.isAllocated()) return;
-
-    ofPushStyle();
-    fbo.begin();
-    ofClear(0);
-    ofSetColor(255);
-    ofDisableAlphaBlending();
-    for(auto&& cam : cams) cam.draw();
-    fbo.end();
-    ofPopStyle();
-}
-
-
-void MultiCam::drawFbo(float x, float y, float w, float h) {
-    ofPushStyle();
-    ofEnableAlphaBlending();
-    ofSetColor(255, 255*drawAlpha);
-    if(w>0 && h>0) fbo.draw(x, y, w, h);
-    else fbo.draw(x, y);
-    ofPopStyle();
-}
-
 
 
 } // namespace msa
