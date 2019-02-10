@@ -1,5 +1,4 @@
 #include "MSAMultiCam.h"
-#include "ofxSimpleGuiToo.h"
 
 namespace msa {
 
@@ -160,7 +159,7 @@ void MultiCam::draw(float x, float y, float w, float h) {
 }
 
 
-void MultiCam::setupGui(string settingsPath) {
+void MultiCam::setup(ofxSimpleGuiToo& gui, string settingsPath) {
     ofVideoGrabber grabber;
     auto devices = grabber.listDevices();
 
@@ -214,8 +213,9 @@ void MultiCam::setupGui(string settingsPath) {
         gui.addContent(si, cam);
     }
 
-
     gui.loadFromXML();
+
+	fbo.allocate(width, height, GL_RGB);
 }
 
 

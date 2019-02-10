@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxSimpleGuiToo.h"
 
 namespace msa {
 
@@ -67,7 +68,7 @@ public:
     };
     vector<Cam> cams;
 
-    void setupGui(string settingsPath="settings/multicam.xml");
+    void setup(ofxSimpleGuiToo& gui, string settingsPath="settings/multicam.xml");
     void autoLayout();
     void update();
     void draw(float x=0, float y=0, float w=0, float h=0);
