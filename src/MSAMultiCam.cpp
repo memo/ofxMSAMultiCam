@@ -40,7 +40,10 @@ void MultiCam::Cam::update() {
     info.hasNewFrame = grabber.isFrameNew();
     if(info.hasNewFrame) {
         float nowTime = ofGetElapsedTimef();
-        if(nowTime > info.lastCaptureTime) info.fps = 1.0f/(nowTime - info.lastCaptureTime);
+        if(nowTime > info.lastCaptureTime) {
+            info.fps = 1.0f/(nowTime - info.lastCaptureTime);
+            info.fpsAvg += (info.fps - info.fpsAvg) * 0.1;
+        }
         info.lastCaptureTime = nowTime;
     }
 }
@@ -252,6 +255,7 @@ void MultiCam::setup(ofxSimpleGuiToo& gui, string settingsPath) {
         gui.addSlider(si+".info.w", cam.info.w, 0, 1920);
         gui.addSlider(si+".info.h", cam.info.h, 0, 1080);
         gui.addSlider(si+".info.fps", cam.info.fps, 0, 240);
+        gui.addSlider(si+".info.fpsAvg", cam.info.fpsAvg, 0, 240);
         gui.addContent(si, cam);
     }
 

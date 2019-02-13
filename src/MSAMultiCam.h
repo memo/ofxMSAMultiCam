@@ -9,8 +9,8 @@ class MultiCam
 {
 public:
     bool enabled = true;
-	bool playVideo = false;
-	bool readFboToPixels = false;
+    bool playVideo = false;
+    bool readFboToPixels = false;
     bool doDraw = true;
     bool doDrawStretched = false;
     float drawAlpha = 1;
@@ -34,8 +34,8 @@ public:
             int w=1280;
             int h=720;
             int fps=30;
-//            bool reinit=false;
-//            bool dummy;
+            //            bool reinit=false;
+            //            bool dummy;
         } init;
 
         struct {
@@ -43,7 +43,7 @@ public:
             bool hflip = false;
             bool vflip = false;
             bool showSettings = false;
-			int x=0, y=0;
+            int x=0, y=0;
             ofVec2f scale = ofVec2f(1, 1);
         } ctrl;
 
@@ -52,6 +52,7 @@ public:
             int w = 0;
             int h = 0;
             float fps = 0;
+            float fpsAvg = 0;
             float lastCaptureTime = 0; // for calculating fps
         } info;
 
@@ -90,8 +91,8 @@ protected:
     ofFbo fbo;
     ofPixels pixels; // only updated if readFboToPixels is true
 
-	ofVideoPlayer player;
-	string playerFilename = "resources/memo_wonderworks.mov";
+    ofVideoPlayer player;
+    string playerFilename = "resources/memo_wonderworks.mov";
 
     void updateBoundingBox();
 };
