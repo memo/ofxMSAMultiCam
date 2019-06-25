@@ -1,7 +1,8 @@
 #pragma once
 
-#define USE_OFXMACHINEVISION
-#define USE_OFXSPINNAKER
+// you can also define these in project settings
+//#define USE_OFXMACHINEVISION
+//#define USE_OFXSPINNAKER
 
 #ifdef USE_OFXSPINNAKER
 #include "ofxSpinnaker.h"
@@ -22,17 +23,16 @@ namespace msa {
 	{
 	public:
 		bool enabled = true;
-		bool playVideo = false;
-		bool readFboToPixels = false;
-		bool doDraw = true;
-		bool doDrawStretched = false;
-		float drawAlpha = 1;
-		int deviceCount = 0;
+		bool reinitialise = false; // rebuilds gui and reinits cameras
+		bool playVideo = false; // play a video file
+		bool readFboToPixels = false; // read multi camera composite fbo back to cpu (slow)
+		bool doDraw = true; // draw to screen
+		bool doDrawStretched = false; // stretch drawing to target rect
+		float drawAlpha = 1; // alpha while drawing
+		int numDevicesToUse = 0; // number of devices to use
 
 		enum DeviceType { WebCam, Spinnaker };
 		DeviceType deviceType = WebCam; // making this global, otherwise not sure which deviceType to enumerate at the start
-
-		bool doInitAll = false; // rebuilds gui and reinits cameras
 
 		// auto layouts
 		struct {
@@ -41,7 +41,6 @@ namespace msa {
 			int height = 1080;
 			bool tileHorizontal = true;
 		} autoLayoutSettings;
-
 
 #ifdef USE_OFXMACHINEVISION
 #define GRABBER ofxMachineVision::Grabber::Simple

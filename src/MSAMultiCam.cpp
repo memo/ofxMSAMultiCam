@@ -8,28 +8,32 @@ namespace msa {
 		if (!ctrl.enabled) return;
 
 		grabber = makeGrabber(deviceType);
-
+		try {
 #ifdef USE_OFXMACHINEVISION
-		auto initSettings = grabber->getDefaultInitialisationSettings();
-		try { // TODO is this the best way to do this?
-			if(initSettings->contains("Device ID")) initSettings->getInt("Device ID").set(0);
-			if(initSettings->contains("Width")) initSettings->getInt("Width").set(init.w);
-			if (initSettings->contains("Height"))initSettings->getInt("Height").set(init.h);
-			if (initSettings->contains("Ideal frame rate"))initSettings->getInt("Ideal frame rate").set(init.fps);
-		} 
-		catch (...) {
-			ofLogError("ofxMultiCam") << "Error setting initialising settings";
-		}
-		grabber->open(initSettings);
-		//grabber->open();
+			auto initSettings = grabber->getDefaultInitialisationSettings();
+			try { // TODO is this the best way to do this?
+				if (initSettings->contains("Device ID")) initSettings->getInt("Device ID").set(0);
+				if (initSettings->contains("Width")) initSettings->getInt("Width").set(init.w);
+				if (initSettings->contains("Height"))initSettings->getInt("Height").set(init.h);
+				if (initSettings->contains("Ideal frame rate"))initSettings->getInt("Ideal frame rate").set(init.fps);
+			}
+			catch (...) {
+				ofLogError("ofxMultiCam") << "Error setting initialising settings";
+			}
+			grabber->open(initSettings);
+			//grabber->open();
 
-		//start the grabber capturing using default trigger
-		grabber->startCapture();
+			//start the grabber capturing using default trigger
+			grabber->startCapture();
 #else
-		grabber->setDeviceID(init.deviceid);
-		grabber->setDesiredFrameRate(init.fps);
-		grabber->setup(init.w, init.h);
+			grabber->setDeviceID(init.deviceid);
+			grabber->setDesiredFrameRate(init.fps);
+			grabber->setup(init.w, init.h);
 #endif
+		} catch (const std::exception &exc) {
+			ofLogError("ofxMultiCam") << "Couldn't open device " << __func__ << " | id:" << id << ", device:" << init.deviceid;
+			ofLogError("ofxMultiCam") << exc.what();
+		}
 	}
 
 	void MultiCam::Cam::close() {
@@ -160,8 +164,8 @@ namespace msa {
 	void MultiCam::update() {
 		if (!enabled) return;
 
-		if (doInitAll) {
-			doInitAll = false;
+		if (reinitialise) {
+			reinitialise = false;
 			closeCameras();
 			setupGui();
 			initCameras();
@@ -255,22 +259,25 @@ namespace msa {
 		ofLogNotice("ofxMSAMultiCam") << "Using ofVideoGrabber";
 		auto devices = tempGrabber->listDevices();
 #endif
-		int totalDeviceCount = devices.size();
+		int totalnumDevicesToUse = devices.size();
 		//if (nCams == 0) nCams = 1; 
-		totalDeviceCount = 32; // ofxMachineVision returns no webcams, TODO bug?
+		totalnumDevicesToUse = 32; // ofxMachineVision returns no webcams, TODO bug?
 
 		guiPage->clear();
 		guiPage->addTitle(GRABBER_STR);
 		guiPage->addToggle("enabled", enabled);
+		guiPage->addButton("reinitialise", reinitialise);
 		guiPage->addToggle("playVideo", playVideo);
 		guiPage->addToggle("readFboToPixels", readFboToPixels);
 		guiPage->addToggle("doDraw", doDraw);
 		guiPage->addToggle("doDrawStretched", doDrawStretched);
 		guiPage->addSlider("drawAlpha", drawAlpha, 0, 1);
+#ifdef USE_OFXMACHINEVISION
 		vector<string> choices = { "WebCam", "Spinnaker" };
 		guiPage->addComboBox("deviceType", (int&)deviceType, 2, choices.data());
-		guiPage->addSlider("deviceCount", deviceCount, 1, totalDeviceCount);
-		guiPage->addToggle("doInitAll", doInitAll);
+#endif
+		guiPage->addTitle("Total devices found: " + ofToString(devices.size()));
+		guiPage->addSlider("numDevicesToUse", numDevicesToUse, 1, totalnumDevicesToUse);
 		guiPage->loadFromXML();
 
 		guiPage->addTitle("autoLayout");
@@ -284,14 +291,14 @@ namespace msa {
 		guiPage->addContent("fbo", fbo);
 
 
-		cams.resize(deviceCount);
+		cams.resize(numDevicesToUse);
 		for (int i = 0; i < cams.size(); i++) {
 			auto& cam = cams[i];
 			cam.id = i;
 			string si = ofToString(i);
 			//        guiPage->addTitle(si).setNewColumn();
 			guiPage->addTitle(si + ".init").setNewColumn();;
-			guiPage->addSlider(si + ".init.deviceid", cam.init.deviceid, 0, totalDeviceCount - 1).setValue(i);
+			guiPage->addSlider(si + ".init.deviceid", cam.init.deviceid, 0, totalnumDevicesToUse - 1).setValue(i);
 			guiPage->addSlider(si + ".init.w", cam.init.w, 0, 1920);
 			guiPage->addSlider(si + ".init.h", cam.init.h, 0, 1080);
 			guiPage->addSlider(si + ".init.fps", cam.init.fps, 0, 240);

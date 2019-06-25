@@ -1,0 +1,4 @@
+ofxMSAInteractiveObject
+ofxMSAMultiCam
+ofxSimpleGuiToo
+ofxXmlSettings

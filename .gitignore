@@ -85,3 +85,8 @@ Desktop.ini
 *.sqlite
 *.qbs.user
 *.bg
+*.VC.db
+*.VC.db-wal
+*.VC.db-shm
+*.vcxproj.user
+*.VC.opendb
