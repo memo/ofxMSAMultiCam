@@ -62,15 +62,15 @@ namespace msa {
 		}
 #endif
 		//--------------------------------------------------------------
-		class Cam : public ofBaseDraws {
+		class GrabberNode : public ofBaseDraws {
 		public:
 			shared_ptr<GRABBER> grabber;
 			int id = -1;
 
 			struct {
 				int deviceid = 0; // TODO: make this work by name?
-				int w = 1280;
-				int h = 720;
+				int w = 640;
+				int h = 480;
 				int fps = 30;
 				//DeviceType deviceType = WebCam; // making this global, otherwise not sure which deviceType to enumerate at the start
 			} init;
@@ -104,7 +104,7 @@ namespace msa {
 			virtual float getHeight() const override;
 
 		};
-		vector<Cam> cams;
+		vector<GrabberNode> cams;
 
 		void setup(ofxSimpleGuiToo& gui, string settingsPath = "settings/multicam.xml");
 		void setupGui();

@@ -2,7 +2,7 @@
 
 namespace msa {
 
-	void MultiCam::Cam::setup(DeviceType deviceType) {
+	void MultiCam::GrabberNode::setup(DeviceType deviceType) {
 		ofLogNotice("ofxMSAMultiCam") << __func__ << " | id:" << id << ", device:" << init.deviceid;
 		close();
 		if (!ctrl.enabled) return;
@@ -12,7 +12,7 @@ namespace msa {
 #ifdef USE_OFXMACHINEVISION
 			auto initSettings = grabber->getDefaultInitialisationSettings();
 			try { // TODO is this the best way to do this?
-				if (initSettings->contains("Device ID")) initSettings->getInt("Device ID").set(0);
+				if (initSettings->contains("Device ID")) initSettings->getInt("Device ID").set(init.deviceid);
 				if (initSettings->contains("Width")) initSettings->getInt("Width").set(init.w);
 				if (initSettings->contains("Height"))initSettings->getInt("Height").set(init.h);
 				if (initSettings->contains("Ideal frame rate"))initSettings->getInt("Ideal frame rate").set(init.fps);
@@ -36,7 +36,7 @@ namespace msa {
 		}
 	}
 
-	void MultiCam::Cam::close() {
+	void MultiCam::GrabberNode::close() {
 		if (grabber) {
 			ofLogNotice("ofxMSAMultiCam") << __func__ << " | id:" << id << ", device:" << init.deviceid;
 			grabber->close();
@@ -44,7 +44,7 @@ namespace msa {
 		}
 	}
 
-	void MultiCam::Cam::update(DeviceType deviceType) {
+	void MultiCam::GrabberNode::update(DeviceType deviceType) {
 		if (!ctrl.enabled) {
 			close();
 			return;
@@ -78,14 +78,14 @@ namespace msa {
 		}
 	}
 
-	void MultiCam::Cam::draw() const {
+	void MultiCam::GrabberNode::draw() const {
 		if (grabber) {
 			draw(ctrl.x, ctrl.y, grabber->getWidth()*ctrl.scale.x, grabber->getHeight()*ctrl.scale.y);
 		}
 	}
 
 	// ofBaseDraws
-	void MultiCam::Cam::draw(float x, float y, float w, float h) const {
+	void MultiCam::GrabberNode::draw(float x, float y, float w, float h) const {
 		if (!ctrl.enabled) return;
 		if (grabber) {
 			ofPushMatrix();
@@ -103,11 +103,11 @@ namespace msa {
 		}
 	}
 
-	float MultiCam::Cam::getWidth() const {
+	float MultiCam::GrabberNode::getWidth() const {
 		return grabber ? grabber->getWidth() : 320;
 	}
 
-	float MultiCam::Cam::getHeight() const {
+	float MultiCam::GrabberNode::getHeight() const {
 		return grabber ? grabber->getHeight() : 320 / 1.7777;
 	}
 
