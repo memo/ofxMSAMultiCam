@@ -1,101 +1,141 @@
 #pragma once
 
+#define USE_OFXMACHINEVISION
+#define USE_OFXSPINNAKER
+
+#ifdef USE_OFXSPINNAKER
+#include "ofxSpinnaker.h"
+#define USE_OFXMACHINEVISION
+#endif
+
+#ifdef USE_OFXMACHINEVISION
+#include "ofxMachineVision.h"
+#endif
+
+
 #include "ofMain.h"
 #include "ofxSimpleGuiToo.h"
 
 namespace msa {
 
-class MultiCam
-{
-public:
-    bool enabled = true;
-    bool playVideo = false;
-    bool readFboToPixels = false;
-    bool doDraw = true;
-    bool doDrawStretched = false;
-    float drawAlpha = 1;
+	class MultiCam
+	{
+	public:
+		bool enabled = true;
+		bool playVideo = false;
+		bool readFboToPixels = false;
+		bool doDraw = true;
+		bool doDrawStretched = false;
+		float drawAlpha = 1;
 
-    // auto layouts
-    struct {
-        bool enabled = false;
-        int width = 1920;
-        int height = 1080;
-        bool tileHorizontal = true;
-    } autoLayoutSettings;
+		enum DeviceType { WebCam, Spinnaker };
+		DeviceType deviceType = WebCam; // making this global, otherwise not sure which deviceType to enumerate at the start
 
-    //--------------------------------------------------------------
-    class Cam : public ofBaseDraws {
-    public:
-        ofVideoGrabber grabber;
-        int id = -1;
+		bool doInitAll = false; // rebuilds gui and reinits cameras
 
-        struct {
-            int deviceid=0; // TODO: make this work by name?
-            int w=1280;
-            int h=720;
-            int fps=30;
-            //            bool reinit=false;
-            //            bool dummy;
-        } init;
+		// auto layouts
+		struct {
+			bool enabled = false;
+			int width = 1920;
+			int height = 1080;
+			bool tileHorizontal = true;
+		} autoLayoutSettings;
 
-        struct {
-            bool enabled = true;
-            bool hflip = false;
-            bool vflip = false;
-            bool showSettings = false;
-            int x=0, y=0;
-            ofVec2f scale = ofVec2f(1, 1);
-        } ctrl;
 
-        struct {
-            bool hasNewFrame = false;
-            int w = 0;
-            int h = 0;
-            float fps = 0;
-            float fpsAvg = 0;
-            float lastCaptureTime = 0; // for calculating fps
-        } info;
+#ifdef USE_OFXMACHINEVISION
+#define GRABBER ofxMachineVision::Grabber::Simple
+#define GRABBER_STR "ofxMachineVision"
 
-        void setup();
-        void close();
-        void update();
-        void draw() const;
+		static shared_ptr<GRABBER> makeGrabber(DeviceType deviceType) {
+			switch (deviceType) {
+#ifdef USE_OFXSPINNAKER
+			case Spinnaker: return make_shared<ofxMachineVision::SimpleGrabber<ofxMachineVision::Device::Spinnaker>>();
+#endif
+			}
+			return make_shared<ofxMachineVision::SimpleGrabber<ofxMachineVision::Device::Webcam>>();
+		}
+#else
+#define GRABBER ofVideoGrabber
+#define GRABBER_STR "ofVideoGrabber"
+		static shared_ptr<GRABBER> makeGrabber(DeviceType deviceType) {
+			return make_shared<ofVideoGrabber>();
+		}
+#endif
+		//--------------------------------------------------------------
+		class Cam : public ofBaseDraws {
+		public:
+			shared_ptr<GRABBER> grabber;
+			int id = -1;
 
-        // ofBaseDraws
-        virtual void draw(float x, float y, float w, float h) const override;
-        virtual float getWidth() const override;
-        virtual float getHeight() const override;
+			struct {
+				int deviceid = 0; // TODO: make this work by name?
+				int w = 1280;
+				int h = 720;
+				int fps = 30;
+				//DeviceType deviceType = WebCam; // making this global, otherwise not sure which deviceType to enumerate at the start
+			} init;
 
-    };
-    vector<Cam> cams;
+			struct {
+				bool enabled = false;
+				bool hflip = false;
+				bool vflip = false;
+				bool showSettings = false;
+				int x = 0, y = 0;
+				ofVec2f scale = ofVec2f(1, 1);
+			} ctrl;
 
-    void setup(ofxSimpleGuiToo& gui, string settingsPath="settings/multicam.xml");
-    void autoLayout();
-    void update();
-    void draw(float x=0, float y=0, float w=0, float h=0);
+			struct {
+				bool hasNewFrame = false;
+				int w = 0;
+				int h = 0;
+				float fps = 0;
+				float fpsAvg = 0;
+				float lastCaptureTime = 0; // for calculating fps
+			} info;
 
-    void initCameras();
-    void closeCameras();
-    void flipCamerasH();
-    void flipCamerasV();
+			void setup(DeviceType deviceType);
+			void close();
+			void update(DeviceType deviceType);
+			void draw() const;
 
-    ofTexture& getTexture() { return fbo.getTexture(); }
-    ofPixels& getPixels() { return pixels; }
+			// ofBaseDraws
+			virtual void draw(float x, float y, float w, float h) const override;
+			virtual float getWidth() const override;
+			virtual float getHeight() const override;
 
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
+		};
+		vector<Cam> cams;
 
-protected:
-    int width, height;
+		void setup(ofxSimpleGuiToo& gui, string settingsPath = "settings/multicam.xml");
+		void setupGui();
+		void autoLayout();
+		void update();
+		void draw(float x = 0, float y = 0, float w = 0, float h = 0);
 
-    ofFbo fbo;
-    ofPixels pixels; // only updated if readFboToPixels is true
+		void initCameras();
+		void closeCameras();
+		void flipCamerasH();
+		void flipCamerasV();
 
-    ofVideoPlayer player;
-    string playerFilename = "resources/memo_wonderworks.mov";
+		ofTexture& getTexture() { return fbo.getTexture(); }
+		ofPixels& getPixels() { return pixels; }
 
-    void updateBoundingBox();
-};
+		int getWidth() const { return width; }
+		int getHeight() const { return height; }
+
+	protected:
+		int width, height;
+
+		ofFbo fbo;
+		ofPixels pixels; // only updated if readFboToPixels is true
+
+		ofVideoPlayer player;
+		string playerFilename = "resources/memo_wonderworks.mov";
+
+		ofxSimpleGuiPage* guiPage = NULL;
+
+		void updateBoundingBox();
+	};
 
 } // namespace msa
 
