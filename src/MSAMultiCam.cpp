@@ -264,7 +264,6 @@ namespace msa {
 		totalnumDevicesToUse = 32; // ofxMachineVision returns no webcams, TODO bug?
 
 		guiPage->clear();
-		guiPage->addTitle(GRABBER_STR);
 		guiPage->addToggle("enabled", enabled);
 		guiPage->addButton("reinitialise", reinitialise);
 		guiPage->addToggle("playVideo", playVideo);
@@ -272,6 +271,7 @@ namespace msa {
 		guiPage->addToggle("doDraw", doDraw);
 		guiPage->addToggle("doDrawStretched", doDrawStretched);
 		guiPage->addSlider("drawAlpha", drawAlpha, 0, 1);
+		guiPage->addTitle(GRABBER_STR);
 #ifdef USE_OFXMACHINEVISION
 		vector<string> choices = { "WebCam", "Spinnaker" };
 		guiPage->addComboBox("deviceType", (int&)deviceType, 2, choices.data());
