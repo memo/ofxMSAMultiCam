@@ -246,6 +246,19 @@ namespace msa {
 
 
 	void MultiCam::setupGui() {
+		auto tempGrabber = makeGrabber(deviceType);
+#ifdef USE_OFXMACHINEVISION
+		ofLogNotice("ofxMSAMultiCam") << "Using ofxMachineVision";
+		auto devices = tempGrabber->getDevice()->listDevices(); // returns empty for webcam. is this normal?
+		for (auto deviceDescription : devices) cout << deviceDescription.manufacturer << ", " << deviceDescription.model << endl;
+#else
+		ofLogNotice("ofxMSAMultiCam") << "Using ofVideoGrabber";
+		auto devices = tempGrabber->listDevices();
+#endif
+		int totalDeviceCount = devices.size();
+		//if (nCams == 0) nCams = 1; 
+		totalDeviceCount = 32; // ofxMachineVision returns no webcams, TODO bug?
+
 		guiPage->clear();
 		guiPage->addTitle(GRABBER_STR);
 		guiPage->addToggle("enabled", enabled);
@@ -256,40 +269,29 @@ namespace msa {
 		guiPage->addSlider("drawAlpha", drawAlpha, 0, 1);
 		vector<string> choices = { "WebCam", "Spinnaker" };
 		guiPage->addComboBox("deviceType", (int&)deviceType, 2, choices.data());
+		guiPage->addSlider("deviceCount", deviceCount, 1, totalDeviceCount);
 		guiPage->addToggle("doInitAll", doInitAll);
 		guiPage->loadFromXML();
 
 		guiPage->addTitle("autoLayout");
 		guiPage->addToggle("autoLayout.enabled", autoLayoutSettings.enabled);
-		guiPage->addSlider("autoLayout.width", autoLayoutSettings.width, 0, 4096);
-		guiPage->addSlider("autoLayout.height", autoLayoutSettings.height, 0, 4096);
+		guiPage->addSlider("autoLayout.width", autoLayoutSettings.width, 0, 8192);
+		guiPage->addSlider("autoLayout.height", autoLayoutSettings.height, 0, 8192);
 		guiPage->addToggle("autoLayout.tileH", autoLayoutSettings.tileHorizontal);
 		guiPage->addTitle("Output");
 		guiPage->addSlider("output.width", width, 0, 8192);
 		guiPage->addSlider("output.height", height, 0, 8192);
 		guiPage->addContent("fbo", fbo);
 
-		auto tempGrabber = makeGrabber(deviceType);
-#ifdef USE_OFXMACHINEVISION
-		ofLogNotice("ofxMSAMultiCam") << "Using ofxMachineVision";
-		auto devices = tempGrabber->getDevice()->listDevices(); // returns empty for webcam. is this normal?
-		for (auto deviceDescription : devices) cout << deviceDescription.manufacturer << ", " << deviceDescription.model << endl;
-#else
-		ofLogNotice("ofxMSAMultiCam") << "Using ofVideoGrabber";
-		auto devices = tempGrabber->listDevices();
-#endif
 
-
-		int nCams = devices.size();
-		if (nCams == 0) nCams = 1; // ofxMachineVision returns no webcams, TODO bug?
-		cams.resize(nCams);
+		cams.resize(deviceCount);
 		for (int i = 0; i < cams.size(); i++) {
 			auto& cam = cams[i];
 			cam.id = i;
 			string si = ofToString(i);
 			//        guiPage->addTitle(si).setNewColumn();
 			guiPage->addTitle(si + ".init").setNewColumn();;
-			guiPage->addSlider(si + ".init.deviceid", cam.init.deviceid, 0, devices.size() - 1).setValue(i);
+			guiPage->addSlider(si + ".init.deviceid", cam.init.deviceid, 0, totalDeviceCount - 1).setValue(i);
 			guiPage->addSlider(si + ".init.w", cam.init.w, 0, 1920);
 			guiPage->addSlider(si + ".init.h", cam.init.h, 0, 1080);
 			guiPage->addSlider(si + ".init.fps", cam.init.fps, 0, 240);

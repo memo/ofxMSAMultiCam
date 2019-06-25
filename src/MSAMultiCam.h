@@ -27,6 +27,7 @@ namespace msa {
 		bool doDraw = true;
 		bool doDrawStretched = false;
 		float drawAlpha = 1;
+		int deviceCount = 0;
 
 		enum DeviceType { WebCam, Spinnaker };
 		DeviceType deviceType = WebCam; // making this global, otherwise not sure which deviceType to enumerate at the start
